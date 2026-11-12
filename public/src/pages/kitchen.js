@@ -1,4 +1,5 @@
-import { getSession, signIn, signOut, getStaff, fetchOrders, fetchOrder, updateStatus, subscribeOrders } from '../services/orderService.js';
+import { fetchOrders, fetchOrder, updateStatus, subscribeOrders, clearCompleted } from '../services/orderService.js';
+import { mountShell } from './shell.js';
 import { esc, hhmm } from '../utils.js';
 import { icon } from '../icons.js';
 
@@ -7,17 +8,7 @@ const orders = new Map();
 const WARN = 10, LATE = 20; // minutos desde o recebimento
 let unsub = null, tick = null, staff = null, sound = true, actx = null;
 
-boot();
-async function boot() { (await getSession()) ? start() : login(); }
-
-function login(msg = '') {
-  $('#app').innerHTML = `<form class="login"><h1>${icon('chef', 26)} Cozinha</h1><input name="e" type="email" placeholder="E-mail" required autocomplete="username">
-    <input name="p" type="password" placeholder="Senha" required autocomplete="current-password"><button>Entrar</button><p class="err">${esc(msg)}</p></form>`;
-  $('.login').onsubmit = async ev => {
-    ev.preventDefault();
-    try { await signIn(ev.target.e.value, ev.target.p.value); start(); } catch { login('E-mail ou senha inválidos.'); }
-  };
-}
+start();
 
 function beep() {
   if (!sound) return;
@@ -31,24 +22,32 @@ function beep() {
 }
 
 async function start() {
-  staff = await getStaff();
-  if (!staff) { await signOut(); return login('Este usuário não tem permissão para acessar a cozinha.'); }
-  const col = (k, cls, label, ic) => `<section class="col ${cls}"><h2>${icon(ic, 20)}<span>${label}</span><i id="n-${k}">0</i></h2><div class="stack" id="col-${k}"></div></section>`;
-  $('#app').innerHTML = `<header class="top"><div class="brandk">${icon('chef', 26)}<h1>Cozinha</h1></div><div class="stats" id="stats"></div>
-    <span id="clock"></span>
-    <button id="snd" class="ibtn" title="Alerta sonoro" aria-label="Alerta sonoro"></button>
-    <button id="out" class="ibtn" title="Sair" aria-label="Sair">${icon('logout', 20)}</button></header>
-    <main class="board">${col('new', 'c-new', 'NOVOS PEDIDOS', 'bell')}${col('preparing', 'c-prep', 'EM PREPARO', 'flame')}${col('ready', 'c-done', 'CONCLUÍDOS', 'check')}</main>`;
+  const shell = await mountShell('kitchen');
+  staff = shell.staff;
+  const clearBtn = `<button id="clear" class="btn-clear">${icon('archive', 18)}Limpar pedidos concluídos</button>`;
+  const col = (k, cls, label, ic, extra = '') => `<section class="col ${cls}"><h2>${icon(ic, 20)}<span>${label}</span><i id="n-${k}">0</i></h2>${extra}<div class="stack" id="col-${k}"></div></section>`;
+  shell.view.innerHTML = `<header class="top"><h1>Pedidos da cozinha</h1><div class="stats" id="stats"></div>
+    <span id="clock"></span><button id="snd" class="ibtn" title="Alerta sonoro" aria-label="Alerta sonoro"></button></header>
+    <main class="board">${col('new', 'c-new', 'NOVOS PEDIDOS', 'bell')}${col('preparing', 'c-prep', 'EM PREPARO', 'flame')}${col('ready', 'c-done', 'CONCLUÍDOS', 'check', clearBtn)}</main>`;
   const paintSnd = () => { $('#snd').innerHTML = icon(sound ? 'volume' : 'mute', 20); $('#snd').classList.toggle('off', !sound); };
   paintSnd();
   $('#snd').onclick = () => { sound = !sound; paintSnd(); beep(); };
-  $('#out').onclick = () => { unsub?.(); unsub = null; clearInterval(tick); orders.clear(); signOut().then(() => login()); };
+
   $('.board').onclick = async e => {
     const b = e.target.closest('[data-s]'); if (!b) return;
     if (b.dataset.s === 'cancelled' && !confirm('Cancelar este pedido?')) return;
     b.disabled = true;
     try { await updateStatus(b.dataset.id, b.dataset.s); await refresh(b.dataset.id); } catch (ex) { alert('Erro: ' + ex.message); b.disabled = false; }
   };
+
+  $('#clear').onclick = async () => {
+    const n = [...orders.values()].filter(o => o.status === 'ready').length;
+    if (!n) return;
+    if (!confirm(`Limpar ${n} pedido${n === 1 ? '' : 's'} concluído${n === 1 ? '' : 's'} da tela?\n\nEles continuam salvos no Histórico de vendas.`)) return;
+    const btn = $('#clear'); btn.disabled = true;
+    try { await clearCompleted(); await reload(); } catch (ex) { alert('Erro ao limpar: ' + ex.message); }
+  };
+
   await reload();
   unsub?.();
   unsub = subscribeOrders(staff.restaurant_id, p => { if (p.eventType === 'INSERT') beep(); refresh(p.new?.id || p.old?.id); }, reload);
@@ -59,7 +58,7 @@ async function reload() { orders.clear(); (await fetchOrders(staff.restaurant_id
 async function refresh(id) {
   if (!id) return;
   const o = await fetchOrder(id);
-  (o && o.status !== 'cancelled') ? orders.set(id, o) : orders.delete(id);
+  (o && o.status !== 'cancelled' && !o.kitchen_cleared_at) ? orders.set(id, o) : orders.delete(id);
   render();
 }
 
@@ -112,8 +111,11 @@ function render() {
   $('#clock').textContent = hhmm(new Date());
   const by = { new: [], preparing: [], ready: [] };
   [...orders.values()].filter(o => by[o.status]).sort((a, b) => new Date(a.created_at) - new Date(b.created_at)).forEach(o => by[o.status].push(o));
-  by.ready.reverse(); by.ready.splice(20);
-  for (const k of Object.keys(by)) { patch($('#col-' + k), by[k]); $('#n-' + k).textContent = by[k].length; }
+  by.ready.reverse();
+  const readyTotal = by.ready.length;
+  by.ready.splice(20);
+  for (const k of Object.keys(by)) { patch($('#col-' + k), by[k]); $('#n-' + k).textContent = k === 'ready' ? readyTotal : by[k].length; }
+  $('#clear').disabled = !readyTotal;
   const late = [...by.new, ...by.preparing].filter(o => mins(o.created_at) >= LATE).length;
   $('#stats').innerHTML = late ? `<span class="stat late">${icon('alert', 15)}${late} ${late === 1 ? 'atrasado' : 'atrasados'}</span>` : '';
 }
