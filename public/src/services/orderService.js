@@ -16,9 +16,16 @@ export async function getStaff() {
   const { data } = await supabase.from('staff').select('restaurant_id, role').maybeSingle();
   return data;
 }
+export async function getRestaurantName(id) {
+  const { data } = await supabase.from('restaurants').select('name').eq('id', id).maybeSingle();
+  return data?.name;
+}
+// Cozinha: pedidos não cancelados e não "limpos". Novos/em preparo aparecem sempre; concluídos, só os das últimas 12h.
 export async function fetchOrders(rid) {
   const since = new Date(Date.now() - 12 * 3600e3).toISOString();
-  const { data, error } = await supabase.from('orders').select(SEL).eq('restaurant_id', rid).neq('status', 'cancelled').gte('created_at', since).order('created_at');
+  const { data, error } = await supabase.from('orders').select(SEL)
+    .eq('restaurant_id', rid).neq('status', 'cancelled').is('kitchen_cleared_at', null)
+    .or(`status.in.(new,preparing),created_at.gte.${since}`).order('created_at');
   if (error) throw error;
   return data;
 }
@@ -29,6 +36,12 @@ export async function fetchOrder(id) {
 export async function updateStatus(id, status) {
   const { error } = await supabase.from('orders').update({ status }).eq('id', id);
   if (error) throw error;
+}
+// Esconde da cozinha os concluídos (não exclui; continuam no histórico)
+export async function clearCompleted() {
+  const { data, error } = await supabase.rpc('clear_completed_orders');
+  if (error) throw new Error(error.message);
+  return data;
 }
 // Um único canal por restaurante; devolve função para cancelar a inscrição.
 export function subscribeOrders(rid, onChange, onReconnect) {
