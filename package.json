@@ -1,0 +1,10 @@
+{
+  "name": "forno-doro-cardapio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/generate-env.js && npx serve public -l 3000",
+    "build": "node scripts/generate-env.js"
+  }
+}

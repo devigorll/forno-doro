@@ -1,0 +1,6 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QR Codes das mesas</title>
+<style>body{font-family:system-ui,sans-serif;margin:0;padding:20px;background:#fafafa}.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}.bar input{padding:10px;border:1px solid #ccc;border-radius:8px}.bar input#base{flex:1;min-width:240px}.bar input#n{width:80px}button{padding:10px 16px;border:0;border-radius:8px;background:#b3261e;color:#fff;font-weight:700;cursor:pointer}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}figure{margin:0;background:#fff;border:1px solid #eee;border-radius:12px;padding:12px;text-align:center;break-inside:avoid}figure img{width:100%}figcaption small{display:block;color:#888;font-size:11px;word-break:break-all}
+@media print{.bar{display:none}body{background:#fff}}</style></head>
+<body><div class="bar"><input id="base" placeholder="URL base"><input id="n" type="number" value="10" min="1" max="60" title="Quantidade de mesas"><button id="go">Gerar</button><button onclick="print()">Imprimir</button></div>
+<div id="grid"></div><script type="module" src="/src/pages/qr.js"></script></body></html>

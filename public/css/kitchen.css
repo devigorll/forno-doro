@@ -1,0 +1,64 @@
+@import url('theme.css');
+
+/* Barra superior */
+.top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 16px; padding: 12px 24px; background: #fff; border-bottom: 1px solid var(--line); }
+.top h1 { margin: 0; flex: 1; font-size: 20px; font-weight: 800; letter-spacing: -.01em; color: var(--brand); }
+#clock { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.top button { padding: 8px 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--bg); font-weight: 600; }
+
+/* Quadro */
+.board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 16px 24px; align-items: start; }
+.board h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 13px; font-weight: 800; letter-spacing: .06em; }
+.board h2::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
+.board h2 i { margin-left: auto; min-width: 30px; padding: 2px 10px; text-align: center; font-style: normal; background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: var(--r-pill); }
+.c-new { color: var(--brand); }
+.c-prep { color: #C47F00; }
+.c-done { color: var(--ok); }
+
+/* Cartão de pedido */
+.ord { margin-bottom: 14px; padding: 16px; background: var(--card); border-radius: var(--r-lg); box-shadow: var(--sh-1); border-top: 4px solid var(--brand); }
+.s-preparing { border-top-color: var(--accent); }
+.s-ready { border-top-color: var(--ok); }
+.ord header { display: flex; align-items: center; gap: 10px; }
+.ord header b { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+.mesa { margin-right: auto; padding: 4px 12px; border-radius: var(--r-pill); background: var(--accent-soft); color: var(--accent-ink); font-weight: 800; font-size: 14px; }
+.ord header > span:last-child { color: var(--mut); font-size: 14px; font-weight: 600; }
+.el { display: inline-block; margin: 8px 0 0; font-size: 14px; font-weight: 700; color: var(--ink-2); }
+.el.late { color: var(--brand); }
+
+.ord ul { list-style: none; margin: 10px 0; padding: 0; font-size: 18px; }
+.ord li { padding: 10px 0; border-bottom: 1px dashed var(--line); line-height: 1.35; }
+.ord li:last-child { border-bottom: 0; }
+.ord li b { font-weight: 800; }
+.ord em { font-style: normal; color: var(--mut); font-size: 15px; }
+.opt { margin-top: 2px; font-size: 14px; font-weight: 600; color: var(--ok); }
+.rm { margin-top: 2px; font-size: 14px; font-weight: 600; color: var(--brand-dark); }
+.obs { margin: 6px 0 0; padding: 6px 10px; border-radius: var(--r-sm); background: var(--accent-soft); color: var(--accent-ink); font-size: 14px; font-weight: 600; }
+
+/* Ações */
+.ord footer { display: flex; gap: 8px; margin-top: 8px; }
+.ord footer:empty { display: none; }
+.ord footer button { flex: 1; height: 52px; border: 0; border-radius: var(--r-md); color: #fff; font-size: 16px; font-weight: 700; }
+.go { background: var(--brand); }
+.ok { background: var(--ok); }
+.ord footer button:disabled { opacity: .6; cursor: wait; }
+.ord footer .no { flex: 0 0 auto; padding: 0 16px; background: #fff; color: var(--ink-2); border: 1px solid var(--line); font-weight: 600; }
+.s-ready { opacity: .9; }
+
+/* Login / admin */
+.login { display: flex; flex-direction: column; gap: 12px; max-width: 380px; margin: 12vh auto; padding: 28px; background: #fff; border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--sh-2); }
+.login h1 { margin: 0 0 4px; font-size: 22px; font-weight: 800; color: var(--brand); }
+.login p { margin: 0; color: var(--ink-2); font-size: 14px; }
+.login button { height: 48px; border: 0; border-radius: var(--r-md); background: var(--brand); color: #fff; font-weight: 700; }
+
+/* Responsivo */
+@media (max-width: 1000px) {
+  .board { grid-template-columns: 1fr; padding: 12px; }
+  .top { padding: 10px 14px; }
+}
+@media (min-width: 1900px) {
+  .board { gap: 24px; padding: 24px 40px; }
+  .ord ul { font-size: 22px; }
+  .ord header b { font-size: 34px; }
+  .ord footer button { height: 60px; font-size: 18px; }
+}
